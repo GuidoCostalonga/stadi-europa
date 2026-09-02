@@ -1051,8 +1051,9 @@ const map = L.map('map',{zoomControl:false, minZoom:3, maxZoom:19, worldCopyJump
              .setView([50.2,10.5],5);
 L.control.zoom({position:'bottomright'}).addTo(map);
 const BASI = {
-  chiara:{url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-          opz:{subdomains:'abcd', maxZoom:20, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'}},
+  chiara:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+          opz:{maxZoom:19, maxNativeZoom:16, attribution:'Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'},
+          etichette:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}'},
   stradale:{url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           opz:{maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}},
   satellite:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -1064,8 +1065,13 @@ function sfondo(nome, manuale){
   const b=BASI[nome]; if(!b) return;
   if(baseAttiva) map.removeLayer(baseAttiva);
   erroriTile=0; baseNome=nome;
-  baseAttiva=L.tileLayer(b.url, b.opz).addTo(map);
-  baseAttiva.on('tileerror', ()=>{
+  const sotto=L.tileLayer(b.url, b.opz);
+  /* alcuni sfondi tengono i nomi dei luoghi in un secondo strato sopra la mappa */
+  baseAttiva = b.etichette
+    ? L.layerGroup([sotto, L.tileLayer(b.etichette, Object.assign({}, b.opz, {attribution:''}))])
+    : sotto;
+  baseAttiva.addTo(map);
+  sotto.on('tileerror', ()=>{
     erroriTile++;
     if(erroriTile>10 && !fallbackFatto && nome!=='stradale'){
       fallbackFatto=true; sfondo('stradale');
